@@ -1,0 +1,1 @@
+A docker container that streams incoming mails into local files.
