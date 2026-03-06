@@ -1,0 +1,25 @@
+{
+    "recommendations": [
+        // Core Tooling
+        "ms-vscode-remote.remote-wsl",
+        "EditorConfig.EditorConfig",
+        "yzhang.markdown-all-in-one",
+        "hediet.vscode-drawio",
+        // Deployment
+        "redhat.vscode-yaml",
+        "samuelcolvin.jinjahtml",
+        "hashicorp.terraform",
+        // Backend
+        "redhat.java",
+        "vscjava.vscode-java-pack",
+        "mongodb.mongodb-vscode",
+        "naco-siren.gradle-language",
+        // Code Formatting
+        "esbenp.prettier-vscode",
+        "rvest.vs-code-prettier-eslint",
+        "dbaeumer.vscode-eslint",
+        // Frontend
+        "Angular.ng-template",
+        "firefox-devtools.vscode-firefox-debug"
+    ]
+}

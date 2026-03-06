@@ -1,0 +1,7 @@
+{
+    "python.terminal.useEnvFile": false,
+    "pylint.args": [
+        "--max-line-length=200",
+        "--disable=C0116,C0115,C0114"
+    ]
+}

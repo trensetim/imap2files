@@ -1,0 +1,26 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+        {
+            "type": "debugpy",
+            "name": "run",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/main/python/main.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "templates_base_dir": "src/main/resources/templates",
+                "output_base_dir": "debug_output",
+                "mail_idle_timeout_sec": "3",
+                "output_write": "attachments",
+                "template_attachment_filename": "{{ uid }} - {{ full_filename }}",
+
+                // "cache_start_fresh": "1",
+                // "mail_disposition": "mark_flagged",
+                // "mail_filter": "unflagged",
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "justMyCode": false
+        }
+	]
+}
