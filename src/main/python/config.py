@@ -127,7 +127,7 @@ class Configuration:
             mail_disposition=environ.get("mail_disposition", Configuration._DEFAULT_MAIL_DISPOSITION).lower(),
             mail_disposition_move_folder=environ.get("mail_disposition_move_folder", Configuration._DEFAULT_MAIL_DISPOSITION_MOVE_FOLDER),
 
-            cache_start_fresh=(environ.get("cache_start_fresh", "0").lower() in ["1", "yes", "true"]) or environ.get("cache_start_fresh", "") == "",
+            cache_start_fresh=(environ.get("cache_start_fresh", "0").lower() in ["1", "yes", "true", ""]),
             cache_path=environ.get("cache_path", f"{workdir}/imap2files.cachedb"),
             cache_size=int(environ.get("cache_size", str(Configuration._DEFAULT_CACHE_SIZE))),
 
