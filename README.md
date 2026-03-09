@@ -12,6 +12,7 @@ The application is configured via environment variables. (Most important configu
 | **mail_folder**              | `INBOX`                | The folder to search for incoming messages to process                                    |
 | mail_filter                  | `UNSEEN`               | IMAP-SEARCH-compliant search query string (depending on the server capabilities)         |
 | mail_idle_timeout_sec        | `1500` (25m)           | Longpolling-Interval for live-events. Must be below the server's idle timeout            |
+| mail_connect_timeout_sec     | `10` (10s)             | TCP connect timeout when establishing a connection with the mail server                  |
 | mail_disposition             | `mark_seen`            | What to do with a mail after processing (see below)                                      |
 | mail_disposition_move_folder | `Trash`                | If and only if `mail_disposition==move`                                                  |
 | cache_start_fresh            | `0` (off)              | Skip loading the cache database during boot                                              |

@@ -54,7 +54,7 @@ async def fetch(mailbox: MailBox):
             await CACHE.add(msg)
 
 def open_mailbox():
-    return MailBox(CONFIGURATION.mail_server, timeout=5).login(CONFIGURATION.mail_user, CONFIGURATION.mail_password)
+    return MailBox(CONFIGURATION.mail_server, timeout=CONFIGURATION.mail_connect_timeout_sec).login(CONFIGURATION.mail_user, CONFIGURATION.mail_password)
 
 async def run_idle_cycle():
     with open_mailbox() as mailbox:

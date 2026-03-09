@@ -21,6 +21,8 @@ class Configuration:
     _DEFAULT_MAIL_FILTER = "UNSEEN"
     _DEFAULT_MAIL_IDLE_TIMEOUT_SEC = 1500
     """"25min: Most mail servers have an idle timeout of 30min, so we want to be below that"""
+    _DEFAULT_MAIL_CONNECT_TIMEOUT_SEC = 10
+    """"10sec: Timeout for connecting to the mail server"""
     _DEFAULT_MAIL_DISPOSITION = "mark_seen"
     _DEFAULT_MAIL_DISPOSITION_MOVE_FOLDER = "Trash"
     _DEFAULT_MAIL_PORT = 993 # imap via tls
@@ -34,6 +36,7 @@ class Configuration:
     mail_filter: str
     """RFC3501/6.4.4 and RFC5032 query string"""
     mail_idle_timeout_sec: int
+    mail_connect_timeout_sec: int
 
     mail_disposition: ProcessedMailDispositionType
     mail_disposition_move_folder: str
@@ -68,6 +71,7 @@ class Configuration:
                  mail_folder: str | None,
                  mail_filter: str | None,
                  mail_idle_timeout_sec: int | None,
+                 mail_connect_timeout_sec: int | None,
 
                  mail_disposition: ProcessedMailDispositionType | None,
                  mail_disposition_move_folder: str | None,
@@ -92,6 +96,7 @@ class Configuration:
         self.mail_folder = mail_folder if mail_folder is not None else Configuration._DEFAULT_MAIL_FOLDER
         self.mail_filter = mail_filter if mail_filter is not None else Configuration._DEFAULT_MAIL_FILTER
         self.mail_idle_timeout_sec = mail_idle_timeout_sec if mail_idle_timeout_sec is not None and mail_idle_timeout_sec>0 else Configuration._DEFAULT_MAIL_IDLE_TIMEOUT_SEC
+        self.mail_connect_timeout_sec = mail_connect_timeout_sec if mail_connect_timeout_sec is not None and mail_connect_timeout_sec>0 else Configuration._DEFAULT_MAIL_CONNECT_TIMEOUT_SEC
 
         self.mail_disposition = mail_disposition if mail_disposition is not None else Configuration._DEFAULT_MAIL_DISPOSITION
         self.mail_disposition_move_folder = mail_disposition_move_folder if mail_disposition_move_folder is not None else Configuration._DEFAULT_MAIL_DISPOSITION_MOVE_FOLDER
@@ -123,6 +128,7 @@ class Configuration:
             mail_folder=environ.get("mail_folder", "INBOX"),
             mail_filter=environ.get("mail_filter", Configuration._DEFAULT_MAIL_FILTER),
             mail_idle_timeout_sec=int(environ.get("mail_idle_timeout_sec", str(Configuration._DEFAULT_MAIL_IDLE_TIMEOUT_SEC))),
+            mail_connect_timeout_sec=int(environ.get("mail_connect_timeout_sec", str(Configuration._DEFAULT_MAIL_CONNECT_TIMEOUT_SEC))),
 
             mail_disposition=environ.get("mail_disposition", Configuration._DEFAULT_MAIL_DISPOSITION).lower(),
             mail_disposition_move_folder=environ.get("mail_disposition_move_folder", Configuration._DEFAULT_MAIL_DISPOSITION_MOVE_FOLDER),
