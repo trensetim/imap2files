@@ -10,7 +10,7 @@ from imap_tools import MailMessage
 class MailProcessCacheEntry:
 
     uid: str
-    """UID of the mail message"""
+    """UID of the mail message. Hint: IMAP guarantees strictly-monotonic increasing UIDs"""
     unix_ms: int
     """Unix timestamp of the mail, in milliseconds. Used for timeout in the circular buffer cache"""
 

@@ -44,6 +44,7 @@ local.properties
 **/__pycache__/**
 
 # debugging application
-/imap2files.cachedb
+/debug_cache
+/debug_cache/**
 /debug_output
 /debug_output/**
