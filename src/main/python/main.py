@@ -48,7 +48,7 @@ async def fetch(mailbox: MailBox):
     messages = mailbox.fetch(criteria=CONFIGURATION.mail_filter, mark_seen=False, bulk=False)
     for msg in messages:
         if not CACHE.has(msg):
-            print(RENDERER.render_log(msg))
+            print(RENDERER.render_log(msg), flush=True)
             consume(msg)
             dispose(mailbox, msg)
             await CACHE.add(msg)
@@ -93,17 +93,17 @@ def assert_connectable():
                 pass # just consume the iterator for test
     try:
         try_connect()
-        print("Connection to mail server established")
+        print("Connection to mail server established", flush=True)
     except Exception as e: # pylint: disable=W0718
-        print(f"Failed to connect to mail server: {e}")
+        print(f"Failed to connect to mail server: {e}", flush=True)
         sys.exit(1)
 
 async def init_cache():
     if not CONFIGURATION.cache_start_fresh:
         await CACHE.try_load()
-        print(f"Loaded {len(CACHE)} cache entries")
+        print(f"Loaded {len(CACHE)} cache entries", flush=True)
     else:
-        print("Starting with a fresh cache")
+        print("Starting with a fresh cache", flush=True)
 
 # ======= Main =======
 
@@ -116,7 +116,7 @@ async def main():
         await run_idle_cycle()
 
     if shutdown_event.is_set():
-        print("Shutdown")
+        print("Shutdown", flush=True)
 
 
 if __name__ == "__main__":
