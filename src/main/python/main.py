@@ -30,7 +30,7 @@ def consume(msg: MailMessage):
 
 def dispose(mailbox: MailBox, msg: MailMessage):
     if CONFIGURATION.mail_disposition == "delete":
-        msg.delete()
+        mailbox.delete([msg.uid])
     elif CONFIGURATION.mail_disposition == "move":
         mailbox.move([msg.uid], CONFIGURATION.mail_disposition_move_folder)
     elif CONFIGURATION.mail_disposition == "mark_seen":
