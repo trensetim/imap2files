@@ -58,11 +58,11 @@ class MailProcessCacheEntry:
 
 class MailProcessCache:
     """
-    The process cache is not a guarantee for exactly-once processing, 
+    The process cache is not a guarantee for exactly-once processing,
     but it is a best-effort attempt to avoid processing the same mail multiple times, for improved performance.
-    
+
     The cache is not crash-safe and multiple concurrent replica processes of this application are not synced.
-    Thus, the runtime configuration MUST still produce idempotent results 
+    Thus, the runtime configuration MUST still produce idempotent results
     (eg. do not use "seen/unseen" flag status in filenames, since those might change over time).
     """
 
@@ -120,6 +120,7 @@ class MailProcessCache:
             path.parent.mkdir(parents=True, exist_ok=True) # raises, if it fails to create the directory
         if path.exists():
             await self.load()
+            print(f"Loaded {len(self._entries)} entries into the cache from {self._db_file_path}")
 
     async def save(self):
         async with self._mutex:
