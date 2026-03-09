@@ -84,6 +84,9 @@ class MailProcessCache:
         if not db_parent.exists():
             db_parent.mkdir(parents=True, exist_ok=True) # raises, if it fails to create the directory
 
+    def __len__(self) -> int:
+        return len(self._entries)
+
     def has(self, msg: MailMessage) -> bool:
         return MailProcessCacheEntry.of(msg) in self._entries
 
@@ -120,7 +123,6 @@ class MailProcessCache:
             path.parent.mkdir(parents=True, exist_ok=True) # raises, if it fails to create the directory
         if path.exists():
             await self.load()
-            print(f"Loaded {len(self._entries)} entries into the cache from {self._db_file_path}")
 
     async def save(self):
         async with self._mutex:

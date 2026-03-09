@@ -74,15 +74,7 @@ async def run_idle_cycle():
         # scan interval by the initial catch-up above.
         await fetch(mailbox)
 
-def test_connect():
-    with open_mailbox() as mailbox:
-        mailbox.folder.set(CONFIGURATION.mail_folder)
-
-        # test whether we can fetch mails at all
-        iterator = mailbox.fetch(limit=1, mark_seen=False, bulk=False)
-        for _ in iterator:
-            pass # just consume the iterator for test
-
+# ======= Startup and shutdown =======
 
 def register_shutdown_event():
     evt = threading.Event()
@@ -90,18 +82,35 @@ def register_shutdown_event():
     signal(SIGTERM, lambda *_: evt.set())
     return evt
 
-async def main():
-    shutdown_event = register_shutdown_event()
+def assert_connectable():
+    def try_connect():
+        with open_mailbox() as mailbox:
+            mailbox.folder.set(CONFIGURATION.mail_folder)
 
-    if not CONFIGURATION.cache_start_fresh:
-        await CACHE.try_load()
-
+            # test whether we can fetch mails at all
+            iterator = mailbox.fetch(limit=1, mark_seen=False, bulk=False)
+            for _ in iterator:
+                pass # just consume the iterator for test
     try:
-        test_connect()
+        try_connect()
         print("Connection to mail server established")
     except Exception as e: # pylint: disable=W0718
         print(f"Failed to connect to mail server: {e}")
         sys.exit(1)
+
+async def init_cache():
+    if not CONFIGURATION.cache_start_fresh:
+        await CACHE.try_load()
+        print(f"Loaded {len(CACHE)} cache entries")
+    else:
+        print("Starting with a fresh cache")
+
+# ======= Main =======
+
+async def main():
+    shutdown_event = register_shutdown_event()
+    await init_cache()
+    assert_connectable() # exit 1 on error
 
     while not shutdown_event.is_set():
         await run_idle_cycle()
