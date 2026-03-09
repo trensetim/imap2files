@@ -22,6 +22,18 @@ The application is configured via environment variables. (Most important configu
 | **output_base_dir**          | `./output`             | Where to write the mail files to                                                         |
 | **output_write**             | `all`                  | Which types of output files to produce (see below)                                       |
 
+## Docker Container
+When running the application as a docker container, the following default configuration applies:
+
+| Variable           | Value                         |
+| ------------------ | ----------------------------- |
+| templates_base_dir | /app/templates                |
+| output_base_dir    | /app/output                   |
+| cache_path         | /app/cache/imap2files.cachedb |
+
+**Important** The container runs as `uid:gid=1000:1000`, so directories that get mounted as cache or output must have appropriate permissions for that user to write to them.
+Similarly, the all files in the templates directory must be readable by that user.
+
 ## Filtering vs. Disposition
 The set of unprocessed (ie. pending) mails is called the "ingest queue".
 After one mail was processed, it needs to be removed from the ingest queue.
