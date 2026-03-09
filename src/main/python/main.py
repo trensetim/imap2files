@@ -56,16 +56,23 @@ async def fetch(mailbox: MailBox):
 def open_mailbox():
     return MailBox(CONFIGURATION.mail_server, timeout=5).login(CONFIGURATION.mail_user, CONFIGURATION.mail_password)
 
-async def run_idle_cycle(shutdown_event: threading.Event):
+async def run_idle_cycle():
     with open_mailbox() as mailbox:
         mailbox.folder.set(CONFIGURATION.mail_folder)
-        await fetch(mailbox) # initial catch-up
-        while not shutdown_event.is_set():
-            mailbox.idle.wait(timeout=CONFIGURATION.mail_idle_timeout_sec)
-            # no matter whether we return by timeout or by receiving events:
-            # we scan here completely again, because there is a time delay between the last fetch and this cycle's StartIdle()
-            # so we need to continuously play catch-up. The "IDLE" is just there to play catch-up faster than the regular scan interval
-            await fetch(mailbox)
+
+        # initial catch-up: Since the last idle cycle there might have been new mails
+        await fetch(mailbox)
+
+        # Wait for the immediate next event: in high-throughput mailboxes this would be a little inefficient
+        # (ie. not waiting for multiple events and then do batch processing).
+        # but e-mail inherently is not designed as a high-throughput system anyways, so we expect not more than one event per idle cycle anyways.
+        mailbox.idle.wait(timeout=CONFIGURATION.mail_idle_timeout_sec)
+
+        # Drop return value: no matter whether we return by timeout or by receiving events:
+        # we scan here completely again, because there is a time delay between receiving the event and fetching,
+        # so we need to continuously play catch-up. The "IDLE" is just there to play catch-up faster than the regular
+        # scan interval by the initial catch-up above.
+        await fetch(mailbox)
 
 def test_connect():
     with open_mailbox() as mailbox:
@@ -78,13 +85,13 @@ def test_connect():
 
 
 def register_shutdown_event():
-    shutdown_event = threading.Event()
-    signal(SIGINT, lambda *_: shutdown_event.set())
-    signal(SIGTERM, lambda *_: shutdown_event.set())
-    return shutdown_event
+    evt = threading.Event()
+    signal(SIGINT, lambda *_: evt.set())
+    signal(SIGTERM, lambda *_: evt.set())
+    return evt
 
 async def main():
-    shutdown_evt = register_shutdown_event()
+    shutdown_event = register_shutdown_event()
 
     if not CONFIGURATION.cache_start_fresh:
         await CACHE.try_load()
@@ -96,10 +103,10 @@ async def main():
         print(f"Failed to connect to mail server: {e}")
         sys.exit(1)
 
-    while not shutdown_evt.is_set():
-        await run_idle_cycle(shutdown_evt)
+    while not shutdown_event.is_set():
+        await run_idle_cycle()
 
-    if shutdown_evt.is_set():
+    if shutdown_event.is_set():
         print("Shutdown")
 
 
