@@ -45,6 +45,5 @@ local.properties
 
 # debugging application
 /debug_cache
-/debug_cache/**
 /debug_output
-/debug_output/**
+/debug_id_db

@@ -48,6 +48,10 @@ class Configuration:
     cache_size: int
     """How many entries to keep in the cache database to reduce duplicate processing of the same mail"""
 
+    id_db_base_dir: str
+    """The directory to store the ID database files to"""
+    id_db_persist: str
+
     templates_base_dir: str
     """Where to load the jinja templates from. The individual file names are hardcoded"""
 
@@ -80,6 +84,9 @@ class Configuration:
                  cache_path: str,
                  cache_size: int | None,
 
+                 id_db_base_dir: str,
+                 id_db_persist: str,
+
                  templates_base_dir: str,
 
                  output_base_dir: str,
@@ -105,6 +112,8 @@ class Configuration:
         self.cache_path = cache_path
         self.cache_size = cache_size if cache_size is not None and cache_size > 0 else Configuration._DEFAULT_CACHE_SIZE
 
+        self.id_db_base_dir = id_db_base_dir
+        self.id_db_persist = id_db_persist
         self.templates_base_dir = templates_base_dir
 
         self.output_base_dir = output_base_dir
@@ -136,6 +145,9 @@ class Configuration:
             cache_start_fresh=(environ.get("cache_start_fresh", "0").lower() in ["1", "yes", "true", ""]),
             cache_path=environ.get("cache_path", f"{workdir}/imap2files.cachedb"),
             cache_size=int(environ.get("cache_size", str(Configuration._DEFAULT_CACHE_SIZE))),
+
+            id_db_base_dir=environ.get("id_db_base_dir", f"{workdir}/id_db"),
+            id_db_persist=environ.get("id_db_persist", "none"),
 
             templates_base_dir=environ.get("templates_base_dir", f"{workdir}/templates"),
 

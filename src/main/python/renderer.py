@@ -1,11 +1,13 @@
 
 from dataclasses import dataclass
-from typing import Iterator, Tuple
+from typing import Callable, Iterator, Tuple
 from os import environ
 from pathlib import Path
 
 from imap_tools import MailMessage, MailAttachment
 from jinja2 import Template
+
+from ids import FileIds
 
 # pylint too few public methods: dataclass
 # pylint: disable=R0902
@@ -15,7 +17,12 @@ class PrerenderedMailInfo:
     FILENAME_SAFE_SPECIAL_CHARS ="._-+ ,()=?@§€"
 
     raw: MailMessage
+    global_id: int
+    """a counter that is incremented for every generated file"""
+    file_id: int
+    """a counter that is incremented for every generated file of the same type (e.g. body text, headers, attachments, custom)"""
     uid: str
+    """the IMAP UID of the mail, or a timestamp if the UID is not available"""
     timestamp: int
     filename_safe_subject: str
     filename_safe_date: str
@@ -25,7 +32,7 @@ class PrerenderedMailInfo:
     filename_safe_bcc_list: str
 
     @staticmethod
-    def render(msg: MailMessage) -> "PrerenderedMailInfo":
+    def render(msg: MailMessage, ids: FileIds) -> "PrerenderedMailInfo":
 
         to_list = ",".join(msg.to) if msg.to is not None else ""
         cc_list = ",".join(msg.cc) if msg.cc is not None else ""
@@ -34,6 +41,8 @@ class PrerenderedMailInfo:
 
         return PrerenderedMailInfo(
             raw=msg,
+            global_id=ids.global_id,
+            file_id=ids.file_specific_id,
             uid=msg.uid if msg.uid is not None else str(int(msg.date.timestamp() * 1000)),
             timestamp=int(msg.date.timestamp() * 1000),
             filename_safe_subject=PrerenderedMailInfo.make_filename_safe(msg.subject, "no_subject"),
@@ -66,8 +75,8 @@ class PrerenderedAttachmentInfo:
     filename_safe_content_disposition: str
 
     @staticmethod
-    def render(msg: MailMessage, attachment: MailAttachment) -> "PrerenderedAttachmentInfo":
-        mail = PrerenderedMailInfo.render(msg)
+    def render(msg: MailMessage, attachment: MailAttachment, ids: FileIds) -> "PrerenderedAttachmentInfo":
+        mail = PrerenderedMailInfo.render(msg, ids)
 
         safe_filename = PrerenderedMailInfo.make_filename_safe(attachment.filename, "no_filename")
 
@@ -129,69 +138,70 @@ class MailRenderer:
         s = s.strip()
         return " ".join(s.splitlines())
 
-    def render_headers_filename(self, msg: MailMessage|PrerenderedMailInfo) -> str:
-        info = PrerenderedMailInfo.render(msg) if not isinstance(msg, PrerenderedMailInfo) else msg
+    def render_headers_filename(self, msg: MailMessage|PrerenderedMailInfo, ids: FileIds) -> str:
+        info = PrerenderedMailInfo.render(msg, ids) if not isinstance(msg, PrerenderedMailInfo) else msg
         out = self._headers_filename.render({**info.__dict__})
         out = MailRenderer._make_oneline(out)
         return out
 
-    def render_body_text_filename(self, msg: MailMessage|PrerenderedMailInfo) -> str:
-        info = PrerenderedMailInfo.render(msg) if not isinstance(msg, PrerenderedMailInfo) else msg
+    def render_body_text_filename(self, msg: MailMessage|PrerenderedMailInfo, ids: FileIds) -> str:
+        info = PrerenderedMailInfo.render(msg, ids) if not isinstance(msg, PrerenderedMailInfo) else msg
         out = self._body_text_filename.render({**info.__dict__})
         out = MailRenderer._make_oneline(out)
         return out
 
-    def render_body_html_filename(self, msg: MailMessage|PrerenderedMailInfo) -> str:
-        info = PrerenderedMailInfo.render(msg) if not isinstance(msg, PrerenderedMailInfo) else msg
+    def render_body_html_filename(self, msg: MailMessage|PrerenderedMailInfo, ids: FileIds) -> str:
+        info = PrerenderedMailInfo.render(msg, ids) if not isinstance(msg, PrerenderedMailInfo) else msg
         out = self._body_html_filename.render({**info.__dict__})
         out = MailRenderer._make_oneline(out)
         return out
 
-    def render_attachment_filenames(self, msg: MailMessage) -> Iterator[str]:
+    def render_attachment_filenames(self, msg: MailMessage, ids: FileIds) -> Iterator[str]:
         for a in msg.attachments:
-            yield self.render_attachment_filename((msg, a))
+            yield self.render_attachment_filename((msg, a), ids)
 
-    def render_attachment_filename(self, msg: Tuple[MailMessage, MailAttachment] | PrerenderedAttachmentInfo) -> str:
-        info = PrerenderedAttachmentInfo.render(msg[0], msg[1]) if not isinstance(msg, PrerenderedAttachmentInfo) else msg
+    def render_attachment_filename(self, msg: Tuple[MailMessage, MailAttachment] | PrerenderedAttachmentInfo, ids: FileIds) -> str:
+        info = PrerenderedAttachmentInfo.render(msg[0], msg[1], ids) if not isinstance(msg, PrerenderedAttachmentInfo) else msg
         out = self._attachment_filename.render({**info.mail.__dict__, **info.__dict__})
         out = MailRenderer._make_oneline(out)
         return out
 
-    def render_custom_filename(self, msg: MailMessage|PrerenderedMailInfo) -> str:
-        info = PrerenderedMailInfo.render(msg) if not isinstance(msg, PrerenderedMailInfo) else msg
+    def render_custom_filename(self, msg: MailMessage|PrerenderedMailInfo, ids: FileIds) -> str:
+        info = PrerenderedMailInfo.render(msg, ids) if not isinstance(msg, PrerenderedMailInfo) else msg
         out = self._custom_filename.render({**info.__dict__})
         out = MailRenderer._make_oneline(out)
         return out
 
-    def render_custom(self, msg: MailMessage) -> RenderedFile:
-        info = PrerenderedMailInfo.render(msg)
-        filename = self.render_custom_filename(info)
+    def render_custom(self, msg: MailMessage, ids: FileIds) -> RenderedFile:
+        info = PrerenderedMailInfo.render(msg, ids)
+        filename = self.render_custom_filename(info, ids)
         content = self._custom.render({**info.__dict__}).encode("utf-8")
         return RenderedFile(filename, content, info)
 
-    def render_body_text(self, msg: MailMessage) -> RenderedFile:
-        info = PrerenderedMailInfo.render(msg)
-        filename = self.render_body_text_filename(info)
+    def render_body_text(self, msg: MailMessage, ids: FileIds) -> RenderedFile:
+        info = PrerenderedMailInfo.render(msg, ids)
+        filename = self.render_body_text_filename(info, ids)
         return RenderedFile(filename, msg.text.encode("utf-8"), info)
 
-    def render_body_html(self, msg: MailMessage) -> RenderedFile:
-        info = PrerenderedMailInfo.render(msg)
-        filename = self.render_body_html_filename(info)
+    def render_body_html(self, msg: MailMessage, ids: FileIds) -> RenderedFile:
+        info = PrerenderedMailInfo.render(msg, ids)
+        filename = self.render_body_html_filename(info, ids)
         return RenderedFile(filename, msg.html.encode("utf-8"), info)
 
-    def render_headers(self, msg: MailMessage) -> RenderedFile:
+    def render_headers(self, msg: MailMessage, ids: FileIds) -> RenderedFile:
         content = "\n".join(f"{k}: {v}" for k, v in msg.headers.items())
-        info = PrerenderedMailInfo.render(msg)
-        filename = self.render_headers_filename(info)
+        info = PrerenderedMailInfo.render(msg, ids)
+        filename = self.render_headers_filename(info, ids)
         return RenderedFile(filename, content.encode("utf-8"), info)
 
-    def render_attachments(self, msg: MailMessage) -> Iterator[RenderedFile]:
+    def render_attachments(self, msg: MailMessage, ids_generator: Callable[[], FileIds]) -> Iterator[RenderedFile]:
         for a in msg.attachments:
-            info = PrerenderedAttachmentInfo.render(msg, a)
-            filename = self.render_attachment_filename(info)
+            ids = ids_generator()
+            info = PrerenderedAttachmentInfo.render(msg, a, ids)
+            filename = self.render_attachment_filename(info, ids)
             yield RenderedFile(filename, a.payload, info)
 
-    def render_log(self, msg: MailMessage) -> str:
-        info = PrerenderedMailInfo.render(msg)
+    def render_log(self, msg: MailMessage, ids: FileIds) -> str:
+        info = PrerenderedMailInfo.render(msg, ids)
         out = self._log.render({**info.__dict__})
         return MailRenderer._make_oneline(out)

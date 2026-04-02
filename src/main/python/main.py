@@ -9,12 +9,14 @@ from config import Configuration
 from file_writer import EmailFileWriter
 from imap_tools import MailBox, MailMessage, MailMessageFlags
 from mail_process_cache import MailProcessCache
+from ids import IdDatabase
 from renderer import MailRenderer
 
 CONFIGURATION = Configuration.from_env()
 CACHE = MailProcessCache(CONFIGURATION.cache_path, CONFIGURATION.cache_size)
 RENDERER = MailRenderer(CONFIGURATION.templates_base_dir)
-DEBUG_WRITER = EmailFileWriter(CONFIGURATION.output_base_dir, RENDERER)
+ID_DB = IdDatabase(CONFIGURATION.id_db_base_dir, CONFIGURATION.id_db_persist)
+DEBUG_WRITER = EmailFileWriter(CONFIGURATION.output_base_dir, RENDERER, ID_DB)
 
 def consume(msg: MailMessage):
     if CONFIGURATION.output_write_custom:
@@ -48,7 +50,7 @@ async def fetch(mailbox: MailBox):
     messages = mailbox.fetch(criteria=CONFIGURATION.mail_filter, mark_seen=False, bulk=False)
     for msg in messages:
         if not CACHE.has(msg):
-            print(RENDERER.render_log(msg), flush=True)
+            print(RENDERER.render_log(msg, ID_DB.next_log()), flush=True)
             consume(msg)
             dispose(mailbox, msg)
             await CACHE.add(msg)

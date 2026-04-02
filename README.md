@@ -18,6 +18,8 @@ The application is configured via environment variables. (Most important configu
 | cache_start_fresh            | `0` (off)              | Skip loading the cache database during boot                                              |
 | cache_path                   | `./imap2files.cachedb` | (Default: Filename "db" in the current directory) Where to store the cache database file |
 | cache_size                   | `100`                  | How many cache entries to keep                                                           |
+| id_db_base_dir               | `./id_db`              | Where to store the internal counters                                                     |
+| id_db_persist                | `none`                 | Which counters to persist across restarts                                                |
 | templates_base_dir           | `./templates`          | Base directory where to read the jinja templates from keep (see below)                   |
 | template_xyz                 | optional               | Override the `{{templates_base_dir}/xyz.jinja` files (see below)                         |
 | **output_base_dir**          | `./output`             | Where to write the mail files to                                                         |
@@ -111,3 +113,17 @@ The possible dispositions are
 - `mark_answered`
 - `mark_flagged`
 - `noop` ... No-Operation, ie: do nothing. Useful if the `mail_user` does not have write permissions on the mailbox and something like `mail_filter=YOUNGER 600` is used
+
+## IDs/Counters
+For all templates, there exist two variables `{{ global_id }}` and `{{ file_id }}`, which are counters, starting at `0` (zero).
+
+- The `global_id` is incremented for every generated file
+- The `file_id` is incremented for every generated file of the same output type (ie. custom/body_text/body_html/headers/attachment; not log).
+
+These can be used for example as a replacement for `{{ uid }}` in filename templates to have an **adjustable** counter, instead of relying on IMAP UIDs for uniqueness.
+This can sometimes be an advantage, when considering IMAP re-indexing it's UIDs (very rare) or when wanting to number the produced files in a different way than by IMAP's own numbering.
+For example, if one wants to collect "all attachments" and give each one a unique, monotonic and non-sparse ID, no matter whether some mails contain none or multiple attachments.
+
+The counters can optionally be persisted across restarts by setting `id_db_persist` to either `all` or something like `global,attachment`.
+In that case, the counter files are synced with the filesystem immediately upon access and are locked during access.
+This should suffice to even run multiple instances of this program in parallel and sync the counters across all of those replicas, given the underlying filesystem is posix-compliant.
